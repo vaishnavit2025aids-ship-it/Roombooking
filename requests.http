@@ -1,0 +1,243 @@
+### =========================================
+### ROOMBOOK API TESTING
+### =========================================
+
+
+### 1. CREATE ROOM 1
+
+POST http://localhost:8080/rooms
+Content-Type: application/json
+
+{
+  "roomName": "Conference Room A",
+  "capacity": 10,
+  "projector": true,
+  "whiteboard": true
+}
+
+
+### 2. CREATE ROOM 2
+
+POST http://localhost:8080/rooms
+Content-Type: application/json
+
+{
+  "roomName": "Meeting Room B",
+  "capacity": 6,
+  "projector": true,
+  "whiteboard": false
+}
+
+
+### 3. GET ALL ROOMS
+
+GET http://localhost:8080/rooms
+
+
+### 4. GET ROOM BY ID
+
+GET http://localhost:8080/rooms/1
+
+
+### 5. UPDATE ROOM
+
+PUT http://localhost:8080/rooms/1
+Content-Type: application/json
+
+{
+  "roomName": "Conference Room A",
+  "capacity": 15,
+  "projector": true,
+  "whiteboard": true
+}
+
+
+### =========================================
+### EMPLOYEE
+### =========================================
+
+
+### 6. CREATE EMPLOYEE
+
+POST http://localhost:8080/employees
+Content-Type: application/json
+
+{
+  "name": "Arun",
+  "email": "arun@company.com",
+  "department": "IT"
+}
+
+
+### 7. CREATE EMPLOYEE 2
+
+POST http://localhost:8080/employees
+Content-Type: application/json
+
+{
+  "name": "Priya",
+  "email": "priya@company.com",
+  "department": "HR"
+}
+
+
+### 8. GET ALL EMPLOYEES
+
+GET http://localhost:8080/employees
+
+
+### 9. GET EMPLOYEE
+
+GET http://localhost:8080/employees/1
+
+
+### 10. UPDATE EMPLOYEE
+
+PUT http://localhost:8080/employees/1
+Content-Type: application/json
+
+{
+  "name": "Arun Kumar",
+  "email": "arun@company.com",
+  "department": "Development"
+}
+
+
+### =========================================
+### BOOKING
+### =========================================
+
+
+### 11. CREATE BOOKING
+
+POST http://localhost:8080/bookings
+Content-Type: application/json
+
+{
+  "room": {
+    "id": 1
+  },
+  "employee": {
+    "id": 1
+  },
+  "startTime": "2026-10-01T10:00:00",
+  "endTime": "2026-10-01T11:00:00"
+}
+
+
+### 12. GET ALL BOOKINGS
+
+GET http://localhost:8080/bookings
+
+
+### 13. GET BOOKING BY ID
+
+GET http://localhost:8080/bookings/1
+
+
+### =========================================
+### CONFLICT TEST
+### =========================================
+
+
+### 14. TRY OVERLAPPING BOOKING
+### SHOULD FAIL WITH 409 CONFLICT
+
+POST http://localhost:8080/bookings
+Content-Type: application/json
+
+{
+  "room": {
+    "id": 1
+  },
+  "employee": {
+    "id": 2
+  },
+  "startTime": "2026-10-01T10:30:00",
+  "endTime": "2026-10-01T11:30:00"
+}
+
+
+### =========================================
+### NON-CONFLICT TEST
+### =========================================
+
+
+### 15. BOOK AFTER FIRST BOOKING
+### SHOULD WORK
+
+POST http://localhost:8080/bookings
+Content-Type: application/json
+
+{
+  "room": {
+    "id": 1
+  },
+  "employee": {
+    "id": 2
+  },
+  "startTime": "2026-10-01T11:00:00",
+  "endTime": "2026-10-01T12:00:00"
+}
+
+
+### =========================================
+### UPDATE BOOKING
+### =========================================
+
+
+### 16. UPDATE BOOKING
+
+PUT http://localhost:8080/bookings/1
+Content-Type: application/json
+
+{
+  "room": {
+    "id": 1
+  },
+  "employee": {
+    "id": 1
+  },
+  "startTime": "2026-10-01T09:00:00",
+  "endTime": "2026-10-01T10:00:00"
+}
+
+
+### =========================================
+### CHECK-IN
+### =========================================
+
+
+### 17. CHECK-IN
+
+PUT http://localhost:8080/bookings/1/checkin
+
+
+### =========================================
+### CANCEL
+### =========================================
+
+
+### 18. CANCEL BOOKING
+
+PUT http://localhost:8080/bookings/2/cancel
+
+
+### =========================================
+### DELETE CRUD TESTS
+### =========================================
+
+
+### DELETE BOOKING
+
+DELETE http://localhost:8080/bookings/2
+
+
+### DELETE EMPLOYEE
+
+DELETE http://localhost:8080/employees/2
+
+
+### DELETE ROOM
+
+DELETE http://localhost:8080/rooms/2
