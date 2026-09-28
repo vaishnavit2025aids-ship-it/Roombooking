@@ -8,6 +8,10 @@ import com.example.roombook.exception.ResourceNotFoundException;
 import com.example.roombook.repository.BookingRepository;
 import com.example.roombook.repository.EmployeeRepository;
 import com.example.roombook.repository.RoomRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +25,6 @@ public class BookingService {
     private final RoomRepository roomRepository;
     private final EmployeeRepository employeeRepository;
 
-
     public BookingService(
             BookingRepository bookingRepository,
             RoomRepository roomRepository,
@@ -32,11 +35,9 @@ public class BookingService {
         this.employeeRepository = employeeRepository;
     }
 
-
     // =========================
     // CREATE BOOKING
     // =========================
-
     public Booking createBooking(Booking booking) {
 
         validateTime(
@@ -44,13 +45,23 @@ public class BookingService {
                 booking.getEndTime()
         );
 
-        Room room = getRoom(
-                booking.getRoom().getId()
-        );
+        Room room = roomRepository.findById(
+                        booking.getRoom().getId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Room not found"
+                        )
+                );
 
-        Employee employee = getEmployee(
-                booking.getEmployee().getId()
-        );
+        Employee employee = employeeRepository.findById(
+                        booking.getEmployee().getId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Employee not found"
+                        )
+                );
 
         checkConflict(
                 room.getId(),
@@ -61,27 +72,24 @@ public class BookingService {
 
         booking.setRoom(room);
         booking.setEmployee(employee);
+
         booking.setStatus("CONFIRMED");
         booking.setCheckedIn(false);
 
         return bookingRepository.save(booking);
     }
 
-
     // =========================
-    // READ ALL
+    // GET ALL BOOKINGS
     // =========================
-
     public List<Booking> getAllBookings() {
 
         return bookingRepository.findAll();
     }
 
-
     // =========================
-    // READ BY ID
+    // GET BOOKING BY ID
     // =========================
-
     public Booking getBookingById(Long id) {
 
         return bookingRepository.findById(id)
@@ -92,65 +100,82 @@ public class BookingService {
                 );
     }
 
-
     // =========================
     // UPDATE BOOKING
     // =========================
-
     public Booking updateBooking(
             Long id,
-            Booking updatedBooking) {
+            Booking booking) {
 
-        Booking existing =
+        Booking existingBooking =
                 getBookingById(id);
 
-        if ("CANCELLED".equals(existing.getStatus())
-                || "NO_SHOW".equals(existing.getStatus())) {
+        if ("CANCELLED".equals(
+                existingBooking.getStatus())) {
 
             throw new IllegalArgumentException(
-                    "Cancelled or no-show booking cannot be updated"
+                    "Cancelled booking cannot be updated"
+            );
+        }
+
+        if ("NO_SHOW".equals(
+                existingBooking.getStatus())) {
+
+            throw new IllegalArgumentException(
+                    "No-show booking cannot be updated"
             );
         }
 
         validateTime(
-                updatedBooking.getStartTime(),
-                updatedBooking.getEndTime()
+                booking.getStartTime(),
+                booking.getEndTime()
         );
 
-        Room room = getRoom(
-                updatedBooking.getRoom().getId()
-        );
+        Room room = roomRepository.findById(
+                        booking.getRoom().getId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Room not found"
+                        )
+                );
 
-        Employee employee = getEmployee(
-                updatedBooking.getEmployee().getId()
-        );
+        Employee employee =
+                employeeRepository.findById(
+                                booking.getEmployee().getId()
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Employee not found"
+                                )
+                        );
 
         checkConflict(
                 room.getId(),
-                updatedBooking.getStartTime(),
-                updatedBooking.getEndTime(),
+                booking.getStartTime(),
+                booking.getEndTime(),
                 id
         );
 
-        existing.setRoom(room);
-        existing.setEmployee(employee);
+        existingBooking.setRoom(room);
+        existingBooking.setEmployee(employee);
 
-        existing.setStartTime(
-                updatedBooking.getStartTime()
+        existingBooking.setStartTime(
+                booking.getStartTime()
         );
 
-        existing.setEndTime(
-                updatedBooking.getEndTime()
+        existingBooking.setEndTime(
+                booking.getEndTime()
         );
 
-        return bookingRepository.save(existing);
+        return bookingRepository.save(
+                existingBooking
+        );
     }
 
-
     // =========================
-    // DELETE
+    // DELETE BOOKING
     // =========================
-
     public void deleteBooking(Long id) {
 
         Booking booking =
@@ -159,11 +184,9 @@ public class BookingService {
         bookingRepository.delete(booking);
     }
 
-
     // =========================
     // CANCEL BOOKING
     // =========================
-
     public Booking cancelBooking(Long id) {
 
         Booking booking =
@@ -190,11 +213,9 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-
     // =========================
-    // CHECK-IN
+    // CHECK IN
     // =========================
-
     public Booking checkIn(Long id) {
 
         Booking booking =
@@ -204,25 +225,23 @@ public class BookingService {
                 booking.getStatus())) {
 
             throw new IllegalArgumentException(
-                    "Only confirmed booking can be checked in"
+                    "Only confirmed bookings can be checked in"
             );
         }
 
-        LocalDateTime now =
-                LocalDateTime.now();
-
-        LocalDateTime allowedUntil =
+        LocalDateTime graceTime =
                 booking.getStartTime()
                         .plusMinutes(10);
 
-        if (now.isAfter(allowedUntil)) {
+        if (LocalDateTime.now()
+                .isAfter(graceTime)) {
 
             booking.setStatus("NO_SHOW");
 
             bookingRepository.save(booking);
 
             throw new IllegalArgumentException(
-                    "Check-in time expired. Booking released."
+                    "Check-in time expired. Booking released as no-show"
             );
         }
 
@@ -232,23 +251,44 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
+    // =========================
+    // PAGINATION + SORTING
+    // ADDITIONAL FEATURE
+    // =========================
+    public Page<Booking>
+    getBookingsWithPaginationAndSorting(
+            int page,
+            int size,
+            String sortBy) {
+
+        PageRequest pageRequest =
+                PageRequest.of(
+                        page,
+                        size,
+                        Sort.by(sortBy)
+                );
+
+        return bookingRepository.findAll(
+                pageRequest
+        );
+    }
 
     // =========================
-    // TIME VALIDATION
+    // VALIDATE TIME
     // =========================
-
     private void validateTime(
-            LocalDateTime start,
-            LocalDateTime end) {
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
 
-        if (start == null || end == null) {
+        if (startTime == null ||
+                endTime == null) {
 
             throw new IllegalArgumentException(
                     "Start time and end time are required"
             );
         }
 
-        if (!end.isAfter(start)) {
+        if (!endTime.isAfter(startTime)) {
 
             throw new IllegalArgumentException(
                     "End time must be after start time"
@@ -256,94 +296,51 @@ public class BookingService {
         }
     }
 
-
     // =========================
-    // GET ROOM
+    // CHECK BOOKING CONFLICT
     // =========================
-
-    private Room getRoom(Long roomId) {
-
-        if (roomId == null) {
-
-            throw new IllegalArgumentException(
-                    "Room id is required"
-            );
-        }
-
-        return roomRepository.findById(roomId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Room not found with id: " + roomId
-                        )
-                );
-    }
-
-
-    // =========================
-    // GET EMPLOYEE
-    // =========================
-
-    private Employee getEmployee(
-            Long employeeId) {
-
-        if (employeeId == null) {
-
-            throw new IllegalArgumentException(
-                    "Employee id is required"
-            );
-        }
-
-        return employeeRepository
-                .findById(employeeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Employee not found with id: "
-                                        + employeeId
-                        )
-                );
-    }
-
-
-    // =========================
-    // CONFLICT DETECTION
-    // =========================
-
     private void checkConflict(
             Long roomId,
-            LocalDateTime start,
-            LocalDateTime end,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
             Long currentBookingId) {
 
-        List<Booking> confirmed =
+        List<Booking> confirmedBookings =
                 bookingRepository
                         .findByRoomIdAndStatusAndStartTimeLessThanAndEndTimeGreaterThan(
                                 roomId,
                                 "CONFIRMED",
-                                end,
-                                start
+                                endTime,
+                                startTime
                         );
 
-        List<Booking> checkedIn =
+        List<Booking> checkedInBookings =
                 bookingRepository
                         .findByRoomIdAndStatusAndStartTimeLessThanAndEndTimeGreaterThan(
                                 roomId,
                                 "CHECKED_IN",
-                                end,
-                                start
+                                endTime,
+                                startTime
                         );
 
-        confirmed.addAll(checkedIn);
-
-        boolean conflict =
-                confirmed.stream()
+        boolean confirmedConflict =
+                confirmedBookings.stream()
                         .anyMatch(booking ->
-                                currentBookingId == null
-                                        ||
+                                currentBookingId == null ||
                                         !booking.getId()
                                                 .equals(currentBookingId)
                         );
 
-        if (conflict) {
+        boolean checkedInConflict =
+                checkedInBookings.stream()
+                        .anyMatch(booking ->
+                                currentBookingId == null ||
+                                        !booking.getId()
+                                                .equals(currentBookingId)
+                        );
+
+        if (confirmedConflict ||
+                checkedInConflict) {
 
             throw new BookingConflictException(
                     "Room is already booked for the selected time slot"
@@ -351,11 +348,10 @@ public class BookingService {
         }
     }
 
-
     // =========================
-    // AUTO RELEASE
+    // AUTO RELEASE NO-SHOW
+    // Runs every 1 minute
     // =========================
-
     @Scheduled(fixedRate = 60000)
     public void releaseNoShowBookings() {
 
@@ -375,12 +371,6 @@ public class BookingService {
             booking.setStatus("NO_SHOW");
 
             bookingRepository.save(booking);
-
-            System.out.println(
-                    "Booking #" +
-                            booking.getId() +
-                            " automatically released due to no-show."
-            );
         }
     }
 }

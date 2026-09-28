@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RoomBook</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">R</div>
+
+        <div>
+            <h2>RoomBook</h2>
+            <p>Meeting Management</p>
+        </div>
+    </div>
+
+    <p class="menu-title">WORKSPACE</p>
+
+    <button class="nav-btn active"
+            data-page="dashboard">
+        Dashboard
+    </button>
+
+    <button class="nav-btn"
+            data-page="rooms">
+        Rooms
+    </button>
+
+    <button class="nav-btn"
+            data-page="employees">
+        Employees
+    </button>
+
+    <button class="nav-btn"
+            data-page="bookings">
+        Bookings
+    </button>
+
+</div>
+
+
+<main class="main">
+
+    <header>
+
+        <div>
+            <p class="small-title">
+                MEETING ROOM MANAGEMENT
+            </p>
+
+            <h1 id="pageTitle">
+                Dashboard
+            </h1>
+        </div>
+
+        <button id="refreshBtn"
+                class="refresh-btn">
+            Refresh
+        </button>
+
+    </header>
+
+
+    <div id="message"
+         class="message hidden">
+    </div>
+
+
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
+
+    <section id="dashboard"
+             class="page active">
+
+        <div class="cards">
+
+            <div class="card">
+                <p>Total Rooms</p>
+                <h2 id="totalRooms">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Total Employees</p>
+                <h2 id="totalEmployees">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Total Bookings</p>
+                <h2 id="totalBookings">0</h2>
+            </div>
+
+            <div class="card">
+                <p>Confirmed Bookings</p>
+                <h2 id="confirmedBookings">0</h2>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>Recent Bookings</h2>
+
+            <div id="dashboardBookings">
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         ROOMS
+    ========================== -->
+
+    <section id="rooms"
+             class="page">
+
+        <div class="panel">
+
+            <h2>Room Management</h2>
+
+            <form id="roomForm"
+                  class="form-grid">
+
+                <div>
+                    <label>Room Name</label>
+
+                    <input
+                            type="text"
+                            name="roomName"
+                            placeholder="Conference Room A"
+                            required>
+                </div>
+
+
+                <div>
+                    <label>Capacity</label>
+
+                    <input
+                            type="number"
+                            name="capacity"
+                            min="1"
+                            required>
+                </div>
+
+
+                <div class="checkbox-box">
+
+                    <label>
+                        <input
+                                type="checkbox"
+                                name="projector">
+
+                        Projector
+                    </label>
+
+                </div>
+
+
+                <div class="checkbox-box">
+
+                    <label>
+                        <input
+                                type="checkbox"
+                                name="whiteboard">
+
+                        Whiteboard
+                    </label>
+
+                </div>
+
+
+                <div class="full">
+
+                    <button type="submit"
+                            class="primary-btn">
+
+                        Add Room
+
+                    </button>
+
+                    <button
+                            type="button"
+                            id="cancelRoomEdit"
+                            class="secondary-btn hidden">
+
+                        Cancel Edit
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>Room List</h2>
+
+            <div id="roomsTable">
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         EMPLOYEES
+    ========================== -->
+
+    <section id="employees"
+             class="page">
+
+        <div class="panel">
+
+            <h2>Employee Management</h2>
+
+            <form id="employeeForm"
+                  class="form-grid">
+
+                <div>
+                    <label>Name</label>
+
+                    <input
+                            type="text"
+                            name="name"
+                            placeholder="Employee Name"
+                            required>
+                </div>
+
+
+                <div>
+                    <label>Email</label>
+
+                    <input
+                            type="email"
+                            name="email"
+                            placeholder="employee@company.com"
+                            required>
+                </div>
+
+
+                <div>
+                    <label>Department</label>
+
+                    <input
+                            type="text"
+                            name="department"
+                            placeholder="IT"
+                            required>
+                </div>
+
+
+                <div class="full">
+
+                    <button type="submit"
+                            class="primary-btn">
+
+                        Add Employee
+
+                    </button>
+
+                    <button
+                            type="button"
+                            id="cancelEmployeeEdit"
+                            class="secondary-btn hidden">
+
+                        Cancel Edit
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>Employee List</h2>
+
+            <div id="employeesTable">
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         BOOKINGS
+    ========================== -->
+    <!-- NOTIFICATION -->
+    <div class="notification-wrapper">
+
+        <button class="notification-bell" onclick="toggleNotifications()">
+            🔔
+            <span id="notificationCount">0</span>
+        </button>
+
+        <div id="notificationPanel" class="notification-panel">
+
+            <div class="notification-header">
+                <h3>Notifications</h3>
+
+                <button onclick="clearNotifications()">
+                    Clear
+                </button>
+            </div>
+
+            <div id="notificationList">
+                <p class="no-notification">
+                    No notifications
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+    <section id="bookings"
+             class="page">
+
+        <div class="panel">
+
+            <h2>Meeting Room Booking</h2>
+
+            <form id="bookingForm"
+                  class="form-grid">
+
+                <div>
+
+                    <label>Room</label>
+
+                    <select
+                            name="roomId"
+                            id="bookingRoom"
+                            required>
+
+                        <option value="">
+                            Select Room
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>Employee</label>
+
+                    <select
+                            name="employeeId"
+                            id="bookingEmployee"
+                            required>
+
+                        <option value="">
+                            Select Employee
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>Start Time</label>
+
+                    <input
+                            type="datetime-local"
+                            name="startTime"
+                            required>
+
+                </div>
+
+
+                <div>
+
+                    <label>End Time</label>
+
+                    <input
+                            type="datetime-local"
+                            name="endTime"
+                            required>
+
+                </div>
+
+
+                <div class="full">
+
+                    <button type="submit"
+                            class="primary-btn">
+
+                        Book Room
+
+                    </button>
+
+                    <button
+                            type="button"
+                            id="cancelBookingEdit"
+                            class="secondary-btn hidden">
+
+                        Cancel Edit
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>Booking List</h2>
+
+            <div id="bookingsTable">
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
